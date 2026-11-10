@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rhea Intelligence - Multimodal Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300..1000;1,300..1000&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Nunito"', 'sans-serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            canvas: '#f2f0e6',
+            sidebar: '#d1dceb',
+            coral: {
+              DEFAULT: '#FF8A65',
+              soft: '#FFA07A',
+            },
+            badge: '#b8d396',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #c2cfdf;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="bg-canvas text-stone-800 font-sans antialiased h-[100dvh] w-screen flex overflow-hidden">
+
+  <!-- Mobile Backdrop Overlay -->
+  <div 
+    id="sidebarOverlay" 
+    onclick="toggleSidebar(false)"
+    class="fixed inset-0 bg-stone-900/40 backdrop-blur-xs z-30 opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden"
+  ></div>
+
+  <!-- Left Sidebar (Responsive Drawer on Mobile, Static Column on Desktop) -->
+  <aside 
+    id="sidebar" 
+    class="fixed inset-y-0 left-0 z-40 w-72 sm:w-80 bg-sidebar flex-shrink-0 flex flex-col justify-between p-5 sm:p-6 border-r border-stone-200/60 transform -translate-x-full transition-transform duration-300 ease-in-out lg:static lg:translate-x-0"
+  >
+    <div class="flex flex-col h-full overflow-y-auto custom-scroll">
+      
+      <!-- Brand & Mobile Close Button -->
+      <div class="mb-10 flex items-start justify-between">
+        <div>
+          <img src="./asset/logo.png" alt="Rhea Logo" class="h-8 max-w-[150px] object-contain">
+          <!-- <p class="text-xs sm:text-sm text-stone-500 mt-1 font-medium text-nowrap">Guided reproductive healthcare assistant</p> -->
+        </div>
+        <button 
+          type="button" 
+          onclick="toggleSidebar(false)" 
+          class="lg:hidden p-1.5 rounded-lg text-stone-500 hover:text-stone-800 hover:bg-stone-200/50"
+          aria-label="Close menu"
+        >
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Topics -->
+      <nav class="space-y-2.5">
+        <button class="w-full flex items-center justify-between px-3.5 py-3 bg-coral text-white font-medium text-xs sm:text-sm rounded-xl shadow-xs transition hover:opacity-95 text-left">
+          <span class="truncate">Reproductive Health Journey</span>
+          <span class="text-lg leading-none ml-2">+</span>
+        </button>
+
+        <button class="w-full flex items-center justify-between px-3.5 py-3 bg-white/70 hover:bg-white text-stone-700 font-medium text-xs sm:text-sm rounded-xl border border-white/60 shadow-xs transition text-left">
+          <span class="truncate">Fertility Market Analysis</span>
+          <span class="text-stone-400 text-lg leading-none ml-2">+</span>
+        </button>
+
+        <button class="w-full flex items-center justify-between px-3.5 py-3 bg-white/70 hover:bg-white text-stone-700 font-medium text-xs sm:text-sm rounded-xl border border-white/60 shadow-xs transition text-left">
+          <span class="truncate">Patient Care Protocols</span>
+          <span class="text-stone-400 text-lg leading-none ml-2">+</span>
+        </button>
+
+        <button class="w-full flex items-center justify-between px-3.5 py-3 bg-white/70 hover:bg-white text-stone-700 font-medium text-xs sm:text-sm rounded-xl border border-white/60 shadow-xs transition text-left">
+          <span class="truncate">Technology Integration</span>
+          <span class="text-stone-400 text-lg leading-none ml-2">+</span>
+        </button>
+      </nav>
+
+    </div>
+  </aside>
+
+  <!-- Main Chat Section -->
+  <main class="flex-1 flex flex-col h-full min-w-0 relative overflow-hidden bg-canvas">
+    
+    <!-- Top Ambient Accent -->
+    <div class="absolute -top-16 -right-16 w-64 sm:w-80 h-64 sm:h-80 bg-badge/30 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Header -->
+    <header class="flex items-center justify-between px-4 sm:px-8 py-4 sm:py-5 border-b border-stone-200/80 bg-canvas/90 backdrop-blur-xs z-10">
+      
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <!-- Hamburger Button (Mobile Only) -->
+        <button 
+          type="button" 
+          onclick="toggleSidebar(true)" 
+          class="lg:hidden p-2 rounded-xl text-stone-600 hover:bg-stone-200/60 transition"
+          aria-label="Open menu"
+        >
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+
+        <div class="flex items-center gap-1.5 sm:gap-2 hover:bg-stone-200/50 cursor-pointer p-1.5 sm:p-2 sm:px-3 rounded-lg transition min-w-0">
+          <p class="text-sm sm:text-base md:text-lg text-stone-600 font-semibold truncate ">Reproductive Health Journey</p>
+          <i data-lucide="chevron-down" class="text-stone-400 w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"></i>  
+        </div>
+      </div>
+
+     
+
+    </header>
+
+    <!-- Chat Messages Window -->
+    <section id="chatContainer" class="flex-1 overflow-y-auto custom-scroll px-4 sm:px-8 py-5 sm:py-7 space-y-4 sm:space-y-6 z-10">
+      
+      <!-- Welcome Message from Rhea AI -->
+      <div class="flex flex-col items-start max-w-full sm:max-w-xl md:max-w-2xl">
+        <div class="bg-white px-4 sm:px-6 py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl rounded-tl-xs shadow-xs border border-stone-100 text-sm sm:text-[15px] leading-relaxed text-stone-800">
+          Hello. I'm here to help you navigate the complexities of reproductive healthcare. How can I assist your journey today?
+        </div>
+        <span class="text-[11px] sm:text-xs text-stone-400 font-medium mt-1.5 ml-1">Rhea AI • Just now</span>
+      </div>
+
+    </section>
+
+    <!-- Input Footer Bar -->
+    <footer class="p-3 sm:p-5 bg-canvas border-t border-stone-200/80 z-10">
+      <div class="max-w-4xl mx-auto space-y-2">
+        
+        <!-- Image Preview Pill (Hidden by default) -->
+        <div id="imagePreviewContainer" class="hidden items-center gap-2.5 bg-white/95 border border-stone-200 px-3 py-1.5 rounded-xl w-fit shadow-xs">
+          <img id="imagePreviewThumb" src="" alt="Selected thumbnail" class="w-8 h-8 sm:w-9 sm:h-9 object-cover rounded-md border border-stone-200">
+          <div class="text-xs">
+            <p id="imagePreviewName" class="font-medium text-stone-700 max-w-[120px] sm:max-w-[200px] truncate">image.png</p>
+            <span class="text-stone-400 text-[10px]">Attached</span>
+          </div>
+          <button type="button" onclick="clearSelectedImage()" class="text-stone-400 hover:text-stone-700 p-1 rounded-full transition ml-1" title="Remove image">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <!-- Main Prompt Input & Action Buttons -->
+        <form onsubmit="handleFormSubmit(event)" class="flex items-center gap-2">
+          
+          <!-- Hidden native file input -->
+          <input 
+            type="file" 
+            id="fileInput" 
+            accept="image/*" 
+            class="hidden" 
+            onchange="handleImageSelect(event)"
+          >
+
+          <!-- Icon button to trigger file picker -->
+          <button 
+            type="button" 
+            onclick="document.getElementById('fileInput').click()" 
+            class="p-2.5 sm:p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl sm:rounded-2xl text-stone-500 hover:text-stone-800 transition shadow-xs flex items-center justify-center flex-shrink-0"
+            title="Attach image"
+          >
+            <i data-lucide="image" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+          </button>
+
+          <!-- Text Prompt Field -->
+          <input 
+            type="text" 
+            id="userInput" 
+            placeholder="Ask a question or attach an image..." 
+            autocomplete="off"
+            class="flex-1 min-w-0 bg-white px-3.5 sm:px-5 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-[#f9b294] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#f9b294] shadow-xs placeholder-stone-400"
+          >
+
+          <!-- Send Button -->
+          <button 
+            type="submit" 
+            id="sendBtn"
+            class="bg-coral hover:bg-coral-soft text-white p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl font-semibold text-sm transition shadow-sm flex items-center justify-center disabled:opacity-50 flex-shrink-0"
+            title="Send message"
+          >
+            <i data-lucide="arrow-up" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+          </button>
+        </form>
+
+      </div>
+    </footer>
+
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    lucide.createIcons();
+
+    // Responsive Mobile Drawer Toggle
+    function toggleSidebar(open) {
+      const sidebar = document.getElementById("sidebar");
+      const overlay = document.getElementById("sidebarOverlay");
+
+      if (open) {
+        sidebar.classList.remove("-translate-x-full");
+        overlay.classList.remove("opacity-0", "pointer-events-none");
+        overlay.classList.add("opacity-100", "pointer-events-auto");
+      } else {
+        sidebar.classList.add("-translate-x-full");
+        overlay.classList.add("opacity-0", "pointer-events-none");
+        overlay.classList.remove("opacity-100", "pointer-events-auto");
+      }
+    }
+  </script>
+  <script src="./index.js"></script>
+</body>
+</html>
