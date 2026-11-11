@@ -75,6 +75,22 @@ function appendAIMessage(text) {
   scrollToBottom();
 }
 
+function createAIMessageBubble() {
+  const time = getFormattedTime();
+  const wrapper = document.createElement("div");
+  wrapper.className = "flex flex-col items-start max-w-2xl";
+  
+  wrapper.innerHTML = `
+    <div class="ai-text-content bg-white px-6 py-4 rounded-3xl rounded-tl-sm shadow-xs border border-stone-100 text-[15px] leading-relaxed text-stone-800 whitespace-pre-wrap"></div>
+    <span class="text-xs text-stone-400 font-medium mt-2 ml-1">Rhea AI • ${time}</span>
+  `;
+  
+  chatContainer.appendChild(wrapper);
+  scrollToBottom();
+  return wrapper.querySelector(".ai-text-content");
+}
+
+
 function appendLoadingBubble() {
   const id = "loading-" + Date.now();
   const html = `
@@ -90,7 +106,6 @@ function appendLoadingBubble() {
   scrollToBottom();
   return id;
 }
-
 async function handleFormSubmit(e) {
   e.preventDefault();
   const message = userInput.value.trim();
@@ -98,10 +113,8 @@ async function handleFormSubmit(e) {
 
   if (!message && !imageUrl) return;
 
-  // Render message in UI
   appendUserMessage(message, imageUrl);
 
-  // Clear inputs immediately
   userInput.value = "";
   clearSelectedImage();
 
@@ -127,16 +140,30 @@ async function handleFormSubmit(e) {
 
     if (!response.ok) {
       const errData = await response.json();
-      appendAIMessage("Error: " + (errData.detail || "Failed to reach server."));
+      const errorBubble = createAIMessageBubble();
+      errorBubble.textContent = "Error: " + (errData.detail || "Failed to reach server.");
       return;
     }
 
-    const data = await response.json();
-    appendAIMessage(data.reply);
+    // Create the bubble and stream text directly into it
+    const aiTextElement = createAIMessageBubble();
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunkText = decoder.decode(value, { stream: true });
+      aiTextElement.textContent += chunkText;
+      scrollToBottom();
+    }
+
   } catch (err) {
     const loadingElem = document.getElementById(loadingId);
     if (loadingElem) loadingElem.remove();
-    appendAIMessage("Network error: Could not connect to FastAPI server at http://127.0.0.1:8000. Is Uvicorn running?");
+    const errorBubble = createAIMessageBubble();
+    errorBubble.textContent = "Network error: Could not connect to FastAPI server at http://127.0.0.1:8000. Is Uvicorn running?";
   } finally {
     userInput.disabled = false;
     sendBtn.disabled = false;
