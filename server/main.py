@@ -1,9 +1,13 @@
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile
+from openai import APIError, BadRequestError, OpenAI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from openai import OpenAI
 from dotenv import load_dotenv
+import subprocess
+from fastapi.responses import Response
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 load_dotenv(override=True)
 
@@ -57,6 +61,11 @@ class ChatRequest(BaseModel):
     message: str
     image_url: str | None = None 
 
+class SpeechRequest(BaseModel):
+    text: str
+
+
+
 @app.get("/")
 def home():
     return {"status": "FastAPI multimodal backend is running!"}
@@ -96,3 +105,59 @@ def chat_endpoint(request: ChatRequest):
 
     except  Exception as e:
       raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.post("/transcribe")
+def transcribe_audio(audio: UploadFile):
+    if audio.size == 0:
+        raise HTTPException(status_code=400, detail="The recording is empty.")
+
+    if audio.size is not None and audio.size > 25_000_000:
+        raise HTTPException(status_code=413, detail="The recording exceeds 25 MB.")
+
+    try:
+        transcript = client.audio.transcriptions.create(
+            model="gpt-transcribe",
+            file=(audio.filename, audio.file, audio.content_type),
+        )
+    except BadRequestError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not transcribe this recording. Check the audio format.",
+        ) from exc
+    except APIError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="The transcription service is unavailable.",
+        ) from exc
+
+    return {"text": transcript.text}
+
+
+
+@app.post("/speak", responses={200: {"content": {"audio/wav": {}}}}, response_class=Response)
+def speak(request: SpeechRequest):
+    text = request.text.strip()
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Please provide text to read aloud.")
+
+    try:
+        with TemporaryDirectory() as folder:
+            wav_path = Path(folder) / "speech.wav"
+
+            subprocess.run(
+                ["espeak-ng", "-v", "en", "-s", "150", "-w", str(wav_path), "--stdin"],
+                input=text.encode("utf-8"),
+                capture_output=True,
+                check=True,
+                timeout=30,
+            )
+
+            audio = wav_path.read_bytes()
+
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise HTTPException(status_code=503, detail="Could not generate speech.") from exc
+
+    return Response(content=audio, media_type="audio/wav")
