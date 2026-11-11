@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI, HTTPException, UploadFile
 from openai import APIError, BadRequestError, OpenAI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import subprocess
@@ -85,7 +86,7 @@ def chat_endpoint(request: ChatRequest):
                 "image_url": {"url": request.image_url}
             })
 
-        response = client.chat.completions.create(
+        stream = client.chat.completions.create(
             model="gpt-4o-mini", 
             messages=[
                 {
@@ -97,11 +98,19 @@ def chat_endpoint(request: ChatRequest):
                     "content": user_content
                 }
             ],
-            max_tokens=500
+            max_tokens=500,
+            stream = True 
         )
 
-        bot_reply = response.choices[0].message.content
-        return {"reply": bot_reply}
+        def generate_response():
+            for chunk in stream:
+              content = chunk.choices[0].delta.content 
+              if content:
+                yield content
+
+        return StreamingResponse(generate_response(), media_type="text/plain")
+
+
 
     except  Exception as e:
       raise HTTPException(status_code=500, detail=str(e))
