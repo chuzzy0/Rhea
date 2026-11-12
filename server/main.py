@@ -144,9 +144,24 @@ def transcribe_audio(audio: UploadFile):
     return {"text": transcript.text}
 
 
-
-@app.post("/speak", responses={200: {"content": {"audio/wav": {}}}}, response_class=Response)
+@app.post("/speak", responses={200: {"content": {"audio/mpeg": {}}}}, response_class=Response)
 def speak(request: SpeechRequest):
+    text = request.text.strip()
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Please provide text to read aloud.")
+
+    try:
+        speech_response = client.audio.speech.create(
+            model="gpt-4o-mini-tts",
+            voice="marin", 
+            instructions="Speak in a warm, calm, and empathetic tone.",
+            input=text
+        )
+        return Response(content=speech_response.content, media_type="audio/mpeg")
+
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Could not generate speech: {str(exc)}") from exc
     text = request.text.strip()
 
     if not text:

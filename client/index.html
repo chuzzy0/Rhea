@@ -38,7 +38,11 @@
       background: #c2cfdf;
       border-radius: 9999px;
     }
-    
+    .markdown-body p { margin-bottom: 0.5rem; }
+    .markdown-body p:last-child { margin-bottom: 0; }
+    .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.5rem; }
+    .markdown-body ol { list-style-type: decimal; margin-left: 1.25rem; margin-bottom: 0.5rem; }
+    .markdown-body strong { font-weight: 700; color: #1c1917; }
   </style>
 </head>
 <body class="bg-canvas text-stone-800 font-sans antialiased h-[100dvh] w-screen flex overflow-hidden">
@@ -69,6 +73,7 @@
           aria-label="Close menu"
         >
           <i data-lucide="x" class="w-5 h-5"></i>
+          
         </button>
       </div>
 
@@ -131,7 +136,17 @@
         <div class="bg-white px-4 sm:px-6 py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl rounded-tl-xs shadow-xs border border-stone-100 text-sm sm:text-[15px] leading-relaxed text-stone-800">
           Hello. I'm here to help you navigate the complexities of reproductive healthcare. How can I assist your journey today?
         </div>
-        <span class="text-[11px] sm:text-xs text-stone-400 font-medium mt-1.5 ml-1">Rhea AI • Just now</span>
+        <div class="flex items-center gap-2 mt-1.5 ml-1">
+          <span class="text-[11px] sm:text-xs text-stone-400 font-medium">Rhea AI • Just now</span>
+          <button 
+            type="button" 
+            onclick="speakText('Hello. I am here to help you navigate the complexities of reproductive healthcare. How can I assist your journey today?', this)"
+            class="text-stone-400 hover:text-coral transition p-1 rounded-full"
+            title="Listen to message"
+          >
+            <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
       </div>
     </section>
 
@@ -187,6 +202,8 @@
             <!-- Mic Trigger -->
             <button 
               type="button" 
+              id="micBtn"
+              onclick="toggleRecording()"
               class="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-full transition flex items-center justify-center"
               title="Voice input"
             >
