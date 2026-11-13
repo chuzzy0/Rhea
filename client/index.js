@@ -255,18 +255,52 @@ function appendAIMessage(text) {
 function createAIMessageBubble() {
   const time = getFormattedTime();
   const wrapper = document.createElement("div");
-  wrapper.className = "flex flex-col items-start max-w-2xl";
-  
-  wrapper.innerHTML = `
-    <div class="ai-text-content bg-white px-6 py-4 rounded-3xl rounded-tl-sm shadow-xs border border-stone-100 text-[15px] leading-relaxed text-stone-800 whitespace-pre-wrap"></div>
-    <span class="text-xs text-stone-400 font-medium mt-2 ml-1">Rhea AI • ${time}</span>
-  `;
-  
-  chatContainer.appendChild(wrapper);
-  scrollToBottom();
-  return wrapper.querySelector(".ai-text-content");
-}
+  wrapper.className = "flex flex-col items-start max-w-full sm:max-w-xl md:max-w-2xl";
 
+  const bubble = document.createElement("div");
+  bubble.className = "markdown-body bg-white px-4 sm:px-6 py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl rounded-tl-xs shadow-xs border border-stone-100 text-sm sm:text-[15px] leading-relaxed text-stone-800";
+
+  const metaRow = document.createElement("div");
+  metaRow.className = "flex items-center gap-2 mt-1.5 ml-1";
+
+  const timestamp = document.createElement("span");
+  timestamp.className = "text-[11px] sm:text-xs text-stone-400 font-medium";
+  timestamp.textContent = `Rhea AI • ${time}`;
+
+  const speakBtn = document.createElement("button");
+  speakBtn.type = "button";
+  speakBtn.className = "text-stone-400 hover:text-coral transition p-1 rounded-full";
+  speakBtn.title = "Listen to message";
+  speakBtn.innerHTML = `<i data-lucide="volume-2" class="w-3.5 h-3.5"></i>`;
+
+  metaRow.appendChild(timestamp);
+  metaRow.appendChild(speakBtn);
+  wrapper.appendChild(bubble);
+  wrapper.appendChild(metaRow);
+
+  chatContainer.appendChild(wrapper);
+  if (window.lucide) lucide.createIcons();
+  scrollToBottom();
+
+  let fullText = "";
+
+  return {
+    appendChunk(chunk) {
+      fullText += chunk;
+      bubble.innerHTML = window.marked ? marked.parse(fullText) : fullText;
+      scrollToBottom();
+    },
+    setError(errText) {
+      fullText = errText;
+      bubble.textContent = errText;
+      bubble.classList.add("text-red-600");
+      scrollToBottom();
+    },
+    finalize() {
+      speakBtn.onclick = () => speakText(fullText, speakBtn);
+    }
+  };
+}
 
 function appendLoadingBubble() {
   const id = "loading-" + Date.now();
@@ -283,6 +317,7 @@ function appendLoadingBubble() {
   scrollToBottom();
   return id;
 }
+
 async function handleFormSubmit(e) {
   e.preventDefault();
   const message = userInput.value.trim();
@@ -315,15 +350,14 @@ async function handleFormSubmit(e) {
     const loadingElem = document.getElementById(loadingId);
     if (loadingElem) loadingElem.remove();
 
+    const aiMessage = createAIMessageBubble();
+
     if (!response.ok) {
       const errData = await response.json();
-      const errorBubble = createAIMessageBubble();
-      errorBubble.textContent = "Error: " + (errData.detail || "Failed to reach server.");
+      aiMessage.setError("Error: " + (errData.detail || "Failed to reach server."));
       return;
     }
 
-    // Create the bubble and stream text directly into it
-    const aiTextElement = createAIMessageBubble();
     const reader = response.body.getReader();
     const decoder = new TextDecoder("utf-8");
 
@@ -332,15 +366,16 @@ async function handleFormSubmit(e) {
       if (done) break;
       
       const chunkText = decoder.decode(value, { stream: true });
-      aiTextElement.textContent += chunkText;
-      scrollToBottom();
+      aiMessage.appendChunk(chunkText);
     }
+
+    aiMessage.finalize();
 
   } catch (err) {
     const loadingElem = document.getElementById(loadingId);
     if (loadingElem) loadingElem.remove();
     const errorBubble = createAIMessageBubble();
-    errorBubble.textContent = "Network error: Could not connect to FastAPI server at http://127.0.0.1:8000. Is Uvicorn running?";
+    errorBubble.setError("Network error: Could not connect to FastAPI server at http://127.0.0.1:8000. Is Uvicorn running?");
   } finally {
     userInput.disabled = false;
     sendBtn.disabled = false;
